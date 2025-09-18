@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI音声文字起こし</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Roboto+Mono:wght@400;500&family=Kaisei+Tokumin:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/docx@7.3.0/build/index.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+        }
+        .font-inter { font-family: 'Inter', sans-serif; }
+        .font-noto { font-family: 'Noto Sans JP', sans-serif; }
+        .font-mono { font-family: 'Roboto Mono', monospace; }
+        .font-mincho { font-family: 'Kaisei Tokumin', serif; }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* スクロールバーのスタイル */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="flex flex-col md:flex-row h-screen">
+
+        <!-- サイドバー: 履歴 -->
+        <aside class="w-full md:w-1/3 lg:w-1/4 bg-white border-r border-gray-200 flex flex-col">
+            <div class="p-4 border-b">
+                <h2 class="text-xl font-bold">変換履歴</h2>
+                <input type="text" id="search-history" placeholder="履歴を検索..." class="w-full mt-2 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div id="history-list" class="flex-grow overflow-y-auto p-2">
+                <!-- 履歴アイテムがここに追加されます -->
+                <p class="text-center text-gray-500 mt-4">履歴はありません。</p>
+            </div>
+        </aside>
+
+        <!-- メインコンテンツ -->
+        <main class="w-full md:w-2/3 lg:w-3/4 p-6 flex flex-col bg-gray-50">
+            <header class="mb-6">
+                <h1 class="text-4xl font-bold text-gray-900">AI音声文字起こし</h1>
+                <p class="text-gray-600 mt-2">Gemini 1.5 Proを利用して、音声ファイル (.m4a) を高精度にテキスト変換します。</p>
+            </header>
+            
+            <!-- ファイルアップロード -->
+            <div id="upload-section" class="mb-6 p-6 bg-white rounded-xl shadow-md border border-gray-200">
+                <label for="audio-file" class="block text-lg font-semibold mb-2 text-gray-700">1. 音声ファイルを選択</label>
+                <div class="flex items-center space-x-4">
+                    <input type="file" id="audio-file" accept=".m4a" class="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100
+                    ">
+                    <button id="transcribe-btn" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 whitespace-nowrap">変換開始</button>
+                </div>
+                 <p id="file-name" class="mt-2 text-sm text-gray-500"></p>
+            </div>
+
+            <!-- 結果表示エリア -->
+            <div id="result-section" class="flex-grow flex flex-col p-6 bg-white rounded-xl shadow-md border border-gray-200 hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">変換結果</h2>
+                    <div class="flex items-center space-x-2">
+                        <!-- フォント選択 -->
+                        <select id="font-selector" class="p-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="font-inter">標準 (Inter)</option>
+                            <option value="font-noto">ゴシック (Noto Sans JP)</option>
+                            <option value="font-mincho">明朝 (Kaisei Tokumin)</option>
+                            <option value="font-mono">等幅 (Roboto Mono)</option>
+                        </select>
+                        <!-- 保存ボタン -->
+                        <button id="save-txt-btn" class="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors text-sm">TXT保存</button>
+                        <button id="save-docx-btn" class="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors text-sm">Word保存</button>
+                    </div>
+                </div>
+                <div id="loading-spinner" class="flex flex-col items-center justify-center h-full hidden">
+                    <div class="loader"></div>
+                    <p class="mt-4 text-gray-600">AIが変換中です... (数分かかることがあります)</p>
+                </div>
+                <textarea id="transcribed-text" class="w-full flex-grow p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base leading-relaxed resize-none"></textarea>
+                 <div class="mt-4 flex justify-end">
+                    <button id="save-to-history-btn" class="px-6 py-2 bg-indigo-600 text-white font-bold rounded-full hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">履歴に保存</button>
+                </div>
+            </div>
+             <p id="error-message" class="text-red-500 mt-4 text-center"></p>
+        </main>
+    </div>
+    
+    <!-- タイトル編集モーダル -->
+    <div id="edit-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">ファイル名を編集</h3>
+                <div class="mt-2 px-7 py-3">
+                    <input type="text" id="edit-title-input" class="w-full p-2 border rounded-lg">
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="save-title-btn" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        保存
+                    </button>
+                     <button id="cancel-edit-btn" class="mt-2 px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none">
+                        キャンセル
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM要素
+            const audioFileInput = document.getElementById('audio-file');
+            const transcribeBtn = document.getElementById('transcribe-btn');
+            const fileNameDisplay = document.getElementById('file-name');
+            const resultSection = document.getElementById('result-section');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const transcribedText = document.getElementById('transcribed-text');
+            const fontSelector = document.getElementById('font-selector');
+            const saveTxtBtn = document.getElementById('save-txt-btn');
+            const saveDocxBtn = document.getElementById('save-docx-btn');
+            const saveToHistoryBtn = document.getElementById('save-to-history-btn');
+            const historyList = document.getElementById('history-list');
+            const searchHistoryInput = document.getElementById('search-history');
+            const errorMessage = document.getElementById('error-message');
+            const editModal = document.getElementById('edit-modal');
+            const editTitleInput = document.getElementById('edit-title-input');
+            const saveTitleBtn = document.getElementById('save-title-btn');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+
+            let selectedFile = null;
+            let currentHistoryId = null;
+
+            // IndexedDBのセットアップ
+            const dbName = 'VoiceToTextDB';
+            let db;
+
+            function initDB() {
+                const request = indexedDB.open(dbName, 1);
+
+                request.onerror = (event) => {
+                    console.error('Database error:', event.target.errorCode);
+                    showError('データベースの初期化に失敗しました。');
+                };
+
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    const objectStore = db.createObjectStore('history', { keyPath: 'id', autoIncrement: true });
+                    objectStore.createIndex('title', 'title', { unique: false });
+                    objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    loadHistory();
+                };
+            }
+            
+            initDB();
+
+            // ファイル選択時の処理
+            audioFileInput.addEventListener('change', (event) => {
+                selectedFile = event.target.files[0];
+                if (selectedFile) {
+                    fileNameDisplay.textContent = `選択中のファイル: ${selectedFile.name}`;
+                    transcribeBtn.disabled = false;
+                } else {
+                    fileNameDisplay.textContent = '';
+                    transcribeBtn.disabled = true;
+                }
+            });
+
+            // フォント変更
+            fontSelector.addEventListener('change', () => {
+                transcribedText.classList.remove('font-inter', 'font-noto', 'font-mono', 'font-mincho');
+                transcribedText.classList.add(fontSelector.value);
+            });
+
+            // 変換開始ボタン
+            transcribeBtn.addEventListener('click', async () => {
+                if (!selectedFile) {
+                    showError('ファイルが選択されていません。');
+                    return;
+                }
+                showError(''); // エラーメッセージをクリア
+                resultSection.classList.remove('hidden');
+                transcribedText.classList.add('hidden');
+                saveToHistoryBtn.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+                
+                try {
+                    const base64Audio = await fileToBase64(selectedFile);
+                    const mimeType = selectedFile.type || 'audio/m4a';
+                    const text = await callGeminiApi(base64Audio, mimeType);
+
+                    transcribedText.value = text;
+                    transcribedText.classList.remove('hidden');
+                    saveToHistoryBtn.classList.remove('hidden');
+                    currentHistoryId = null; // 新規テキストとして扱う
+                } catch (error) {
+                    console.error('Error during transcription:', error);
+                    showError('変換中にエラーが発生しました。詳細はコンソールを確認してください。');
+                } finally {
+                    loadingSpinner.classList.add('hidden');
+                }
+            });
+
+            // Gemini API呼び出し
+            async function callGeminiApi(base64Data, mimeType, retries = 3, delay = 1000) {
+                const apiKey = ""; // Canvas will provide it
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                const systemPrompt = `あなたはプロの文字起こし担当者です。提供された音声データを、話している人物を区別して正確に日本語で文字起こししてください。話者の名前は「話者A」「話者B」のように明確に区別して表記してください。不要な相槌やフィラー（「えーと」「あのー」など）は適切に削除または整形し、読みやすいテキストを作成してください。`;
+
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: systemPrompt },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: base64Data
+                                }
+                            }
+                        ]
+                    }],
+                };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.json();
+                        throw new Error(`API Error ${response.status}: ${errorBody.error?.message || response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+
+                    if (candidate && candidate.content?.parts?.[0]?.text) {
+                        return candidate.content.parts[0].text;
+                    } else {
+                        throw new Error('予期しないAPIレスポンス形式です。');
+                    }
+                } catch(error) {
+                    if (retries > 0) {
+                        await new Promise(res => setTimeout(res, delay));
+                        return callGeminiApi(base64Data, mimeType, retries - 1, delay * 2);
+                    }
+                    throw error;
+                }
+            }
+
+
+            // 履歴に保存
+            saveToHistoryBtn.addEventListener('click', () => {
+                const text = transcribedText.value;
+                if (!text) return;
+
+                const transaction = db.transaction(['history'], 'readwrite');
+                const objectStore = transaction.objectStore('history');
+                
+                const defaultTitle = selectedFile ? selectedFile.name : `無題 - ${new Date().toLocaleString()}`;
+                
+                const data = {
+                    title: defaultTitle,
+                    text: text,
+                    font: fontSelector.value,
+                    timestamp: new Date()
+                };
+
+                let request;
+                if (currentHistoryId) {
+                    data.id = currentHistoryId;
+                    request = objectStore.put(data);
+                } else {
+                    request = objectStore.add(data);
+                }
+
+                request.onsuccess = (event) => {
+                    if(!currentHistoryId) {
+                        currentHistoryId = event.target.result;
+                    }
+                    loadHistory();
+                    alert('履歴に保存しました。');
+                };
+                request.onerror = (event) => {
+                    console.error('Failed to save to history:', event.target.errorCode);
+                    showError('履歴の保存に失敗しました。');
+                };
+            });
+
+            // 履歴の読み込みと表示
+            function loadHistory(searchTerm = '') {
+                 if (!db) return;
+                const transaction = db.transaction(['history'], 'readonly');
+                const objectStore = transaction.objectStore('history');
+                const request = objectStore.getAll();
+
+                request.onsuccess = (event) => {
+                    historyList.innerHTML = '';
+                    let allHistory = event.target.result.sort((a, b) => b.timestamp - a.timestamp);
+
+                    if (searchTerm) {
+                        allHistory = allHistory.filter(item => item.title.toLowerCase().includes(searchTerm.toLowerCase()));
+                    }
+
+                    if (allHistory.length === 0) {
+                        historyList.innerHTML = `<p class="text-center text-gray-500 mt-4">${searchTerm ? '検索結果はありません。' : '履歴はありません。'}</p>`;
+                        return;
+                    }
+
+                    allHistory.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'p-3 mb-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-blue-100 relative group';
+                        div.dataset.id = item.id;
+
+                        div.innerHTML = `
+                            <p class="font-semibold text-gray-800 truncate">${item.title}</p>
+                            <p class="text-xs text-gray-500">${new Date(item.timestamp).toLocaleString()}</p>
+                            <div class="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button data-action="edit" class="p-1 rounded-full hover:bg-gray-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" /></svg>
+                                </button>
+                                <button data-action="delete" class="p-1 rounded-full hover:bg-gray-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
+                        `;
+                        historyList.appendChild(div);
+                    });
+                };
+                 request.onerror = (event) => {
+                    console.error('Failed to load history:', event.target.errorCode);
+                    showError('履歴の読み込みに失敗しました。');
+                };
+            }
+            
+            // 履歴リストのイベント処理（イベント委譲）
+            historyList.addEventListener('click', (event) => {
+                const target = event.target.closest('button, div[data-id]');
+                if (!target) return;
+
+                const id = parseInt(target.closest('div[data-id]').dataset.id, 10);
+                const action = target.dataset.action;
+
+                if (action === 'edit') {
+                    openEditModal(id);
+                } else if (action === 'delete') {
+                    deleteHistoryItem(id);
+                } else {
+                    loadHistoryItem(id);
+                }
+            });
+
+            // 履歴の読み込み
+            function loadHistoryItem(id) {
+                const transaction = db.transaction(['history'], 'readonly');
+                const objectStore = transaction.objectStore('history');
+                const request = objectStore.get(id);
+
+                request.onsuccess = (event) => {
+                    const item = event.target.result;
+                    if (item) {
+                        resultSection.classList.remove('hidden');
+                        loadingSpinner.classList.add('hidden');
+                        transcribedText.classList.remove('hidden');
+                        saveToHistoryBtn.classList.remove('hidden');
+
+                        transcribedText.value = item.text;
+                        fontSelector.value = item.font || 'font-inter';
+                        fontSelector.dispatchEvent(new Event('change'));
+                        currentHistoryId = item.id;
+                        selectedFile = null; // 履歴から読み込んだのでファイルをリセット
+                        fileNameDisplay.textContent = `履歴から読み込み: ${item.title}`;
+                        showError('');
+                    }
+                };
+            }
+            
+            // 履歴の削除
+            function deleteHistoryItem(id) {
+                if (confirm('この履歴を削除しますか？')) {
+                    const transaction = db.transaction(['history'], 'readwrite');
+                    const objectStore = transaction.objectStore('history');
+                    const request = objectStore.delete(id);
+                    request.onsuccess = () => {
+                        loadHistory();
+                    };
+                }
+            }
+            
+            // タイトル編集モーダルを開く
+            function openEditModal(id) {
+                 const transaction = db.transaction(['history'], 'readonly');
+                const objectStore = transaction.objectStore('history');
+                const request = objectStore.get(id);
+                
+                request.onsuccess = (event) => {
+                    const item = event.target.result;
+                    if (item) {
+                       editModal.classList.remove('hidden');
+                       editTitleInput.value = item.title;
+                       saveTitleBtn.dataset.id = id;
+                    }
+                };
+            }
+            
+            // タイトルを保存
+            saveTitleBtn.addEventListener('click', () => {
+                const id = parseInt(saveTitleBtn.dataset.id, 10);
+                const newTitle = editTitleInput.value.trim();
+                if (!newTitle) return;
+
+                const transaction = db.transaction(['history'], 'readwrite');
+                const objectStore = transaction.objectStore('history');
+                const getRequest = objectStore.get(id);
+
+                getRequest.onsuccess = (event) => {
+                    const item = event.target.result;
+                    item.title = newTitle;
+                    const updateRequest = objectStore.put(item);
+                    updateRequest.onsuccess = () => {
+                        editModal.classList.add('hidden');
+                        loadHistory();
+                    };
+                };
+            });
+            
+            cancelEditBtn.addEventListener('click', () => {
+                editModal.classList.add('hidden');
+            });
+
+
+            // 履歴検索
+            searchHistoryInput.addEventListener('input', (event) => {
+                loadHistory(event.target.value);
+            });
+            
+
+            // テキストファイルとして保存
+            saveTxtBtn.addEventListener('click', () => {
+                const text = transcribedText.value;
+                const title = fileNameDisplay.textContent.startsWith('履歴から読み込み:') ? 
+                    fileNameDisplay.textContent.replace('履歴から読み込み: ', '') :
+                    (selectedFile?.name || 'transcription');
+                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${title.split('.').slice(0, -1).join('.') || title}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+            
+            // Wordファイルとして保存
+            saveDocxBtn.addEventListener('click', () => {
+                const text = transcribedText.value;
+                const title = fileNameDisplay.textContent.startsWith('履歴から読み込み:') ? 
+                    fileNameDisplay.textContent.replace('履歴から読み込み: ', '') :
+                    (selectedFile?.name || 'transcription');
+                
+                const paragraphs = text.split('\n').map(p => new docx.Paragraph({ children: [new docx.TextRun(p)] }));
+                
+                const doc = new docx.Document({
+                    sections: [{
+                        properties: {},
+                        children: paragraphs,
+                    }],
+                });
+
+                docx.Packer.toBlob(doc).then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${title.split('.').slice(0, -1).join('.') || title}.docx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            });
+
+
+            // ユーティリティ関数
+            function fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = error => reject(error);
+                });
+            }
+
+            function showError(message) {
+                errorMessage.textContent = message;
+            }
+        });
+    </script>
+</body>
+</html>
