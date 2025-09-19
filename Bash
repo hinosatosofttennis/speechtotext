@@ -1,1 +1,14 @@
 #!/bin/bash
+
+# プロジェクトディレクトリの作成
+mkdir speech-to-text-proxy
+cd speech-to-text-proxy
+
+# package.jsonの作成
+npm init -y
+
+# 必要な依存関係のインストール
+npm install @google-cloud/speech cors
+
+# 開発依存関係のインストール
+npm install -D vercel
