@@ -1,0 +1,39 @@
+# package.json
+{
+  "name": "speech-to-text-proxy",
+  "version": "1.0.0",
+  "description": "Speech-to-Text API Proxy for GitHub.io",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@google-cloud/speech": "^6.0.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  }
+}
+
+# vercel.json
+{
+  "functions": {
+    "api/speech-to-text.js": {
+      "maxDuration": 60
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "https://yourusername.github.io" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
+      ]
+    }
+  ]
+}
