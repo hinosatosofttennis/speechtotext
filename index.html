@@ -425,7 +425,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎤 音声テキスト変換</h1>
+            <h1>音声テキスト変換</h1>
             <p>Google Speech-to-Text API & Gemini AI 1.5 Pro</p>
         </div>
 
@@ -746,7 +746,7 @@
         }
 
         // 設定: Vercel関数のエンドポイントURL
-        const SPEECH_API_PROXY = 'https://your-vercel-app.vercel.app/api/speech-to-text'; // 実際のURLに変更してください
+        const SPEECH_API_PROXY = 'https://speechtotext-orpin.vercel.app/api/speech-to-text'; // 実際のURLに変更してください
 
         // Google Speech-to-Text API呼び出し（Vercelプロキシ経由）
         async function callSpeechToTextAPI(base64Audio, apiKey, language) {
