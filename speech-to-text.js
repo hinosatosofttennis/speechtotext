@@ -96,7 +96,7 @@ export default async function handler(req, res) {
 // 使用例とテスト用エンドポイント
 export function testEndpoint() {
   return {
-    endpoint: '/api/speech-to-text',
+    endpoint: '/speech-to-text',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
