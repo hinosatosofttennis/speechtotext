@@ -1,4 +1,4 @@
-// speech-to-text.js
+// api/speech-to-text.js
 export default async function handler(req, res) {
   // CORS設定
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
 // 使用例とテスト用エンドポイント
 export function testEndpoint() {
   return {
-    endpoint: '/speech-to-text',
+    endpoint: '/api/speech-to-text',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
