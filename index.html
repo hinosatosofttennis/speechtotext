@@ -1063,9 +1063,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             }
-            {
-                text = document.getElementById('textDisplay').textContent || currentText;
-                htmlContent =
+            
             　<html>
                  <head>
                  <meta charset="utf-8">
@@ -1082,7 +1080,7 @@
                     <pre style="white-space: pre-wrap; font-family: inherit;">${text}</pre>
                 </body>
                 </html>
-            }`;
+            `;
 
             const blob = new Blob([htmlContent], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
