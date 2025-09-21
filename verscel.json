@@ -23,9 +23,3 @@
     "GOOGLE_REGION": "@google-region"
   }
 }
-
----
-
-# api/gemini.js (別エンドポイント)
-import { geminiHandler } from './speech-to-text.js';
-export default geminiHandler;
