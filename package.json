@@ -2,7 +2,7 @@
   "name": "speech-to-text-proxy-service-account",
   "version": "1.0.0",
   "description": "Speech-to-Text API Proxy with Google Service Account",
-  "main": "speech-to-text.js",
+  "main": "api/speech-to-text.js",
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel --prod"
