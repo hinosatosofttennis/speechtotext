@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vercel dev",
-    "build": " ",
+    "build": "vercel build",
     "deploy": "vercel --prod"
   },
   "dependencies": {
