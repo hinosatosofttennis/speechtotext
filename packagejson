@@ -1,0 +1,18 @@
+# package.json
+{
+  "name": "speech-to-text-proxy-service-account",
+  "version": "1.0.0",
+  "description": "Speech-to-Text API Proxy with Google Service Account",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "google-auth-library": "^9.4.0"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  }
+}
