@@ -1,0 +1,32 @@
+# vercel.json
+{
+  "functions": {
+    "api/speech-to-text.js": {
+      "maxDuration": 60
+    },
+    "api/gemini.js": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
+      ]
+    }
+  ],
+  "env": {
+    "GOOGLE_PROJECT_ID": "@google-project-id",
+    "GOOGLE_SERVICE_ACCOUNT_KEY": "@google-service-account-key",
+    "GOOGLE_REGION": "@google-region"
+  }
+}
+
+---
+
+# api/gemini.js (別エンドポイント)
+import { geminiHandler } from './speech-to-text.js';
+export default geminiHandler;
