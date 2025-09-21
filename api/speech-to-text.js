@@ -168,7 +168,7 @@ export default async function handler(req, res) {
 export async function geminiHandler(req, res) {
   // CORS設定（同じロジック）
   const allowedOrigins = [
-    'https://yourusername.github.io',
+    'https://hinosatosofttennis.github.io',
     'http://localhost:3000',
     'https://localhost:3000'
   ];
