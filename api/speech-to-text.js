@@ -1,4 +1,4 @@
-// api/speech-to-text.js (サービスアカウント対応版)
+// api/speech-to-text.js (サービスアカウント対応版)　
 import { GoogleAuth } from 'google-auth-library';
 
 export default async function handler(req, res) {
