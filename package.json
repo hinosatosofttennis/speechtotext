@@ -1,7 +1,7 @@
 {
   "name": "speech-to-text-proxy",
   "version": "1.0.0",
-  "description": "SpeechtoText API Proxy for GitHub.io",
+  "description": "Speech-to-Text API Proxy for GitHub.io",
   "main": "index.js",
   "scripts": {
     "dev": "vercel dev",
