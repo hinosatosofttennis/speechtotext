@@ -1,4 +1,3 @@
-# vercel.json
 {
   "functions": {
     "api/speech-to-text.js": {
