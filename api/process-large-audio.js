@@ -181,7 +181,7 @@ async function checkFileDuration(audioUri, authClient) {
         
         // ファイルサイズから概算（目安: 1MB = 約1分）
         const estimatedDurationMinutes = metadata.size / (1024 * 1024);
-        return estimatedDurationMinutes > 1; // 1分を超える場合はlong running
+        return estimatedDurationMinutes > 4; // 1分を超える場合はlong running
         
     } catch (error) {
         console.warn('Duration check failed, using long running as fallback');
