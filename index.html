@@ -818,7 +818,434 @@
             }
 
             const file = fileInput.files[0];
-                     
+            
+// 大容量音声ファイル処理システム
+// フロントエンド（HTML/JavaScript）
+class LargeAudioProcessor {
+    constructor() {
+        this.uploadMethod = 'cloud_storage'; // 'cloud_storage', 'drive_upload', 'streaming'
+        this.maxChunkSize = 50 * 1024 * 1024; // 50MB chunks
+        this.supportedFormats = ['mp3', 'wav', 'flac', 'm4a', 'aac'];
+    }
+
+    // メイン処理メソッド
+    async processLargeAudioFile(file) {
+        console.log(`大容量ファイル処理開始: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+        
+        try {
+            // ファイルサイズに応じて処理方法を選択
+            if (file.size <= 4 * 1024 * 1024) {
+                // 15MB以下: 直接処理
+                return await this.processDirectUpload(file);
+            } else if (file.size <= 120 * 1024 * 1024) {
+                // 120MB以下: Cloud Storage経由
+                return await this.processViaCloudStorage(file);
+            } else if (file.size <= 1024 * 1024 * 1024) {
+                // 1GB以下: Google Drive経由
+                return await this.processViaGoogleDrive(file);
+            } else {
+                // 1GB超: ストリーミング処理
+                return await this.processViaStreaming(file);
+            }
+        } catch (error) {
+            console.error('大容量ファイル処理エラー:', error);
+            throw error;
+        }
+    }
+
+    // 方法1: Cloud Storage経由処理
+    async processViaCloudStorage(file) {
+        const uploadProgress = this.createProgressBar('Cloud Storageにアップロード中...');
+        
+        try {
+            // 1. 署名付きURLを取得
+            const signedUrlResponse = await fetch('/api/get-signed-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileName: file.name,
+                    fileSize: file.size,
+                    contentType: file.type
+                })
+            });
+            
+            const { signedUrl, objectName } = await signedUrlResponse.json();
+            
+            // 2. Cloud Storageに直接アップロード
+            await this.uploadToCloudStorage(file, signedUrl, uploadProgress);
+            
+            // 3. Speech-to-Text処理を開始
+            const processResponse = await fetch('/api/process-large-audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    objectName: objectName,
+                    config: {
+                        languageCode: document.getElementById('language').value,
+                        enableDiarization: document.getElementById('enableDiarization').value === 'true',
+                        minSpeakers: parseInt(document.getElementById('minSpeakers').value) || 2,
+                        maxSpeakers: parseInt(document.getElementById('maxSpeakers').value) || 6
+                    }
+                })
+            });
+            
+            const result = await processResponse.json();
+            this.removeProgressBar(uploadProgress);
+            
+            return result;
+            
+        } catch (error) {
+            this.removeProgressBar(uploadProgress);
+            throw error;
+        }
+    }
+
+    // 方法2: Google Drive経由処理
+    async processViaGoogleDrive(file) {
+        const uploadProgress = this.createProgressBar('Google Driveにアップロード中...');
+        
+        try {
+            // Google Drive APIを使用してアップロード
+            const driveFileId = await this.uploadToGoogleDrive(file, uploadProgress);
+            
+            // Drive経由でSpeech-to-Text処理
+            const processResponse = await fetch('/api/process-drive-audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    driveFileId: driveFileId,
+                    config: {
+                        languageCode: document.getElementById('language').value,
+                        enableDiarization: document.getElementById('enableDiarization').value === 'true'
+                    }
+                })
+            });
+            
+            const result = await processResponse.json();
+            this.removeProgressBar(uploadProgress);
+            
+            return result;
+            
+        } catch (error) {
+            this.removeProgressBar(uploadProgress);
+            throw error;
+        }
+    }
+
+    // 方法3: ストリーミング処理（超大容量対応）
+    async processViaStreaming(file) {
+        const chunks = this.createFileChunks(file, this.maxChunkSize);
+        const results = [];
+        
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            const progress = this.createProgressBar(`チャンク ${i + 1}/${chunks.length} 処理中...`);
+            
+            try {
+                // チャンクごとに処理
+                const chunkResult = await this.processChunk(chunk, i);
+                results.push(chunkResult);
+                
+                this.removeProgressBar(progress);
+                
+                // 処理間隔を設ける（レート制限対策）
+                if (i < chunks.length - 1) {
+                    await this.sleep(2000);
+                }
+                
+            } catch (error) {
+                this.removeProgressBar(progress);
+                console.error(`チャンク ${i + 1} の処理でエラー:`, error);
+                // エラーがあっても続行するか判定
+                if (!this.shouldContinueOnError(error)) {
+                    throw error;
+                }
+            }
+        }
+        
+        // 結果をマージ
+        return this.mergeChunkResults(results);
+    }
+
+    // Cloud Storageへのアップロード
+    async uploadToCloudStorage(file, signedUrl, progressBar) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    this.updateProgressBar(progressBar, percentComplete);
+                }
+            });
+            
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) {
+                    resolve();
+                } else {
+                    reject(new Error(`アップロードエラー: ${xhr.status}`));
+                }
+            });
+            
+            xhr.addEventListener('error', () => {
+                reject(new Error('ネットワークエラー'));
+            });
+            
+            xhr.open('PUT', signedUrl);
+            xhr.setRequestHeader('Content-Type', file.type);
+            xhr.send(file);
+        });
+    }
+
+    // Google Driveへのアップロード
+    async uploadToGoogleDrive(file, progressBar) {
+        // Google Drive API v3を使用
+        const metadata = {
+            name: file.name,
+            parents: ['your-drive-folder-id'] // 専用フォルダID
+        };
+        
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', file);
+        
+        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${await this.getGoogleAccessToken()}`
+            },
+            body: form
+        });
+        
+        const result = await response.json();
+        return result.id;
+    }
+
+    // ファイルをチャンクに分割
+    createFileChunks(file, chunkSize) {
+        const chunks = [];
+        let start = 0;
+        
+        while (start < file.size) {
+            const end = Math.min(start + chunkSize, file.size);
+            chunks.push({
+                data: file.slice(start, end),
+                start: start,
+                end: end,
+                index: chunks.length
+            });
+            start = end;
+        }
+        
+        return chunks;
+    }
+
+    // チャンク処理
+    async processChunk(chunk, index) {
+        const base64Data = await this.fileToBase64(chunk.data);
+        
+        const response = await fetch('/api/process-audio-chunk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                audioData: base64Data,
+                chunkIndex: index,
+                startTime: this.calculateStartTime(chunk.start),
+                config: {
+                    encoding: 'MP3',
+                    sampleRateHertz: 16000,
+                    languageCode: document.getElementById('language').value
+                }
+            })
+        });
+        
+        return await response.json();
+    }
+
+    // チャンク結果をマージ
+    mergeChunkResults(results) {
+        const mergedText = results
+            .filter(result => result.success)
+            .map(result => result.transcript)
+            .join(' ');
+        
+        return {
+            success: true,
+            text: mergedText,
+            totalChunks: results.length,
+            processedChunks: results.filter(r => r.success).length
+        };
+    }
+
+    // プログレスバー作成
+    createProgressBar(message) {
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'progress-container';
+        progressContainer.innerHTML = `
+            <div class="progress-message">${message}</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="progress-percent">0%</div>
+        `;
+        
+        document.body.appendChild(progressContainer);
+        return progressContainer;
+    }
+
+    // プログレスバー更新
+    updateProgressBar(progressBar, percent) {
+        const fill = progressBar.querySelector('.progress-fill');
+        const percentText = progressBar.querySelector('.progress-percent');
+        
+        fill.style.width = `${percent}%`;
+        percentText.textContent = `${Math.round(percent)}%`;
+    }
+
+    // プログレスバー削除
+    removeProgressBar(progressBar) {
+        if (progressBar && progressBar.parentNode) {
+            progressBar.parentNode.removeChild(progressBar);
+        }
+    }
+
+    // ユーティリティメソッド
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    calculateStartTime(byteOffset) {
+        // 音声ファイルのビットレートから時間を計算（概算）
+        const estimatedBitrate = 128000; // 128kbps
+        const bytesPerSecond = estimatedBitrate / 8;
+        return Math.floor(byteOffset / bytesPerSecond);
+    }
+
+    shouldContinueOnError(error) {
+        // 一時的なエラーの場合は続行
+        const temporaryErrors = ['timeout', 'rate_limit', 'temporary'];
+        return temporaryErrors.some(keyword => 
+            error.message.toLowerCase().includes(keyword)
+        );
+    }
+
+    async getGoogleAccessToken() {
+        // OAuth2トークンを取得（実装が必要）
+        // または、サーバーサイドでトークンを管理
+        const response = await fetch('/api/get-google-token');
+        const data = await response.json();
+        return data.access_token;
+    }
+}
+
+// 使用例
+const processor = new LargeAudioProcessor();
+
+// 大容量ファイル処理の統合
+async function handleLargeFileConversion() {
+    const fileInput = document.getElementById('audioFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showError('ファイルを選択してください');
+        return;
+    }
+    
+    try {
+        showSuccess(`大容量ファイル処理を開始します: ${file.name}`);
+        
+        const result = await processor.processLargeAudioFile(file);
+        
+        if (result.success) {
+            // 結果を表示
+            document.getElementById('textDisplay').textContent = result.text;
+            showSuccess('大容量ファイルの処理が完了しました！');
+        } else {
+            throw new Error(result.error || '処理に失敗しました');
+        }
+        
+    } catch (error) {
+        console.error('大容量ファイル処理エラー:', error);
+        showError(`処理エラー: ${error.message}`);
+    }
+}
+
+// CSS（プログレスバー用）
+const progressBarStyles = `
+<style>
+.progress-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    min-width: 400px;
+}
+
+.progress-message {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #374151;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 12px;
+    background: #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    border-radius: 6px;
+    transition: width 0.3s ease;
+}
+
+.progress-percent {
+    text-align: center;
+    font-weight: 600;
+    color: #4f46e5;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.progress-fill {
+    animation: pulse 2s infinite;
+}
+</style>
+`;
+
+// スタイルを追加
+document.head.insertAdjacentHTML('beforeend', progressBarStyles);
+            
+            
+            
+            
+            
+            
+            
+                                                
             // ファイルサイズチェック（クライアント側）
             const maxSizeInMB = 15; // サービスアカウントでは15MBまで対応
             const fileSizeInMB = file.size / 1024 / 1024;
