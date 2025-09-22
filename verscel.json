@@ -5,6 +5,24 @@
     },
     "api/gemini.js": {
       "maxDuration": 30
+    },
+    "api/get-signed-url.js": {
+      "maxDuration": 30
+    },
+    "api/process-large-audio.js": {
+      "maxDuration": 300
+    },
+    "api/process-drive-audio.js": {
+      "maxDuration": 600
+    },
+    "api/process-audio-chunk.js": {
+      "maxDuration": 60
+    },
+    "api/cleanup-files.js": {
+      "maxDuration": 60
+    },
+    "api/get-google-token.js": {
+      "maxDuration": 30
     }
   },
   "headers": [
@@ -20,6 +38,9 @@
   "env": {
     "GOOGLE_PROJECT_ID": "@google-project-id",
     "GOOGLE_SERVICE_ACCOUNT_KEY": "@google-service-account-key",
-    "GOOGLE_REGION": "@google-region"
+    "GOOGLE_REGION": "@google-region",
+    "GOOGLE_STORAGE_BUCKET": "@google-storage-bucket"
+  }
+}region"
   }
 }
