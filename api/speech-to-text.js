@@ -82,12 +82,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // 音声データのサイズ制限チェック（15MB）
+    // 音声データのサイズ制限チェック（4MB）
     const audioSizeInMB = (audioData.length * 3) / 4 / 1024 / 1024;
-    if (audioSizeInMB > 15) {
+    if (audioSizeInMB > 4) {
       return res.status(413).json({
         error: 'Audio file too large for direct processing',
-        maxSize: '15MB',
+        maxSize: '4MB',
         currentSize: `${audioSizeInMB.toFixed(2)}MB`,
         suggestion: 'Use large file processing mode'
       });
