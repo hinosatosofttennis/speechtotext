@@ -1,16 +1,21 @@
 {
-  "name": "speech-to-text-proxy-service-account",
-  "version": "1.0.0",
-  "description": "Speech-to-Text API Proxy with Google Service Account",
+  "name": "speech-to-text-proxy-large-files",
+  "version": "1.1.0",
+  "description": "Speech-to-Text API Proxy with Large File Support",
   "main": "api/speech-to-text.js",
   "scripts": {
     "dev": "vercel dev",
-    "deploy": "vercel --prod"
+    "start": "node index.js"
   },
   "dependencies": {
-    "google-auth-library": "^9.4.0"
+    "google-auth-library": "^9.4.0",
+    "@google-cloud/storage": "^7.7.0",
+    "@google-cloud/speech": "^6.0.0"
   },
   "devDependencies": {
     "vercel": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
