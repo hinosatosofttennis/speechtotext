@@ -25,7 +25,7 @@ export default async function driveAudioHandler(req, res) {
         const tempObjectName = await copyDriveFileToStorage(driveFileId, accessToken.token);
         
         // Speech-to-Text処理
-        const bucketName = process.env.GOOGLE_STORAGE_BUCKET || 'speech-audio-files';
+        const bucketName = process.env.GOOGLE_STORAGE_BUCKET || 'speech-to-2025text';
         const audioUri = `gs://${bucketName}/${tempObjectName}`;
         
         const speechRequest = {
