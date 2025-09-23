@@ -1262,6 +1262,11 @@
                     updateLoadingMessage('Cloud Storageにアップロード中...');
                     result = await processViaCloudStorage(file, language);
                     
+                } else if (fileSizeInMB <= 1024) {
+                    // 大容量: Google Drive経由
+                    updateLoadingMessage('Google Driveにアップロード中...');
+                    result = await processViaGoogleDrive(file, language);
+                
                 } else {
                     // 大容量: ストリーミング処理
                     updateLoadingMessage('大容量ファイルを分割処理中...');
