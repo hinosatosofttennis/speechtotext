@@ -1528,7 +1528,7 @@
 
         // 既存のGoogleSpeechToTextAPIWithServiceAccount関数はそのまま保持
         // Google Speech-to-Text API呼び出し（サービスアカウント経由・エラーハンドリング強化）
-        async function GoogleSpeechToTextAPIWithServiceAccount(base64Audio, language) {
+        async function callSpeechToTextAPIWithServiceAccount(base64Audio, language) {
             const enableDiarization = document.getElementById('enableDiarization').value === 'true';
             
             const config = {
