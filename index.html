@@ -492,7 +492,7 @@
                 </div>
 
                 <div id="speakerNames" class="input-group" style="display: none;">
-                    <label>話者名の設定（オプション）</label>
+                    <label for="speakerNameInputs">話者名の設定（オプション）</label>
                     <div id="speakerNameInputs">
                         <!-- 話者名入力フィールドが動的に生成されます -->
                     </div>
@@ -1126,14 +1126,16 @@
             
             container.innerHTML = speakerColors.slice(0, maxSpeakers).map((color, index) => `
                 <div class="speaker-name-input">
-                    <div class="speaker-indicator" style="background-color: ${color};"></div>
-                    <input type="text" 
-                           id="speakerName${index}" 
-                           placeholder="話者${index + 1}" 
-                           value="${speakerNames[index] || '話者' + (index + 1)}"
-                           onchange="updateSpeakerName(${index}, this.value)">
+                   <div class="speaker-indicator" style="background-color: ${color};"></div>
+                   <label for="speakerName${index}" class="speaker-label-inline">話者${index + 1}</label>
+                   <input type="text" 
+                    id="speakerName${index}" 
+                    placeholder="話者${index + 1}" 
+                    value="${speakerNames[index] || '話者' + (index + 1)}"
+                    onchange="updateSpeakerName(${index}, this.value)"
+                    aria-label="話者${index + 1}の名前">
                 </div>
-            `).join('');
+             `).join('');
         }
 
         // 話者名を更新
@@ -1516,9 +1518,9 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        // 既存のcallSpeechToTextAPIWithServiceAccount関数はそのまま保持
+        // 既存のGoogleSpeechToTextAPIWithServiceAccount関数はそのまま保持
         // Google Speech-to-Text API呼び出し（サービスアカウント経由・エラーハンドリング強化）
-        async function callSpeechToTextAPIWithServiceAccount(base64Audio, language) {
+        async function GoogleSpeechToTextAPIWithServiceAccount(base64Audio, language) {
             const enableDiarization = document.getElementById('enableDiarization').value === 'true';
             
             const config = {
