@@ -5,7 +5,7 @@
   "main": "api/speech-to-text.js",
   "scripts": {
     "dev": "vercel dev",
-    "start": "node index.js"
+    "start": "node api/speech-to-text.js"
   },
   "dependencies": {
     "google-auth-library": "^9.4.0",
