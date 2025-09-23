@@ -1249,7 +1249,7 @@
                 const fileSizeInMB = file.size / 1024 / 1024;
                 let result;
 
-                if (fileSizeInMB <= 15) {
+                if (fileSizeInMB <= 4) {
                     // 小容量: 直接処理
                     updateLoadingMessage('音声ファイルを読み込み中...');
                     const base64Audio = await fileToBase64(file);
@@ -1257,7 +1257,7 @@
                     updateLoadingMessage('音声をテキストに変換中...');
                     result = await callSpeechToTextAPIWithServiceAccount(base64Audio, language);
                     
-                } else if (fileSizeInMB <= 100) {
+                } else if (fileSizeInMB <= 120) {
                     // 中容量: Cloud Storage経由
                     updateLoadingMessage('Cloud Storageにアップロード中...');
                     result = await processViaCloudStorage(file, language);
