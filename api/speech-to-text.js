@@ -44,24 +44,92 @@ export default async function handler(req, res) {
       throw new Error('Google Cloud設定が不正です');
     }
 
-    // サービスアカウント認証情報をデコード
+      try {
+    // Secret Managerからgemini APIキーを取得
+    const auth = new GoogleAuth({
+      credentials: JSON.parse(
+        Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_KEY, 'base64').toString('utf-8')
+      ),
+      scopes: ['https://www.googleapis.com/auth/cloud-platform']
+    });
+
+    const authClient = await auth.getClient();
+    const projectId = process.env.GOOGLE_PROJECT_ID;
+    
+    // Secret Manager APIでGemini APIキーを取得
+    const secretResponse = await fetch(
+      `https://secretmanager.googleapis.com/v1/projects/${projectId}/secrets/gemini-api-key/versions/latest:access`,
+      {
+        headers: {
+          'Authorization': `Bearer ${(await authClient.getAccessToken()).token}`
+        }
+      }
+    );
+
+    const secretData = await secretResponse.json();
+    const geminiApiKey = Buffer.from(secretData.payload.data, 'base64').toString('utf-8');
+
+    // Gemini API呼び出し
+    const { text, options } = req.body;
+    
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: text
+            }]
+          }],
+          generationConfig: {
+            temperature: options?.temperature || 0.7,
+            maxOutputTokens: options?.maxOutputTokens || 2048
+          }
+        })
+      }
+    );
+
+    const geminiData = await geminiResponse.json();
+
+    if (!geminiResponse.ok) {
+      throw new Error(`Gemini API Error: ${geminiData.error?.message}`);
+    }
+
+    res.status(200).json({
+      success: true,
+      result: geminiData.candidates[0].content.parts[0].text
+    });
+
+  } catch (error) {
+    console.error('Gemini API Error:', error);
+    res.status(500).json({
+      error: 'Gemini API Error',
+      message: error.message
+    });
+  }
+}
+  // サービスアカウント認証情報をデコード
     const serviceAccountInfo = JSON.parse(
       Buffer.from(serviceAccountKey, 'base64').toString('utf-8')
     );
 
-    // Google Auth クライアントの初期化
-    const auth = new GoogleAuth({
-      credentials: serviceAccountInfo,
-      projectId: projectId,
-      scopes: [
-        'https://www.googleapis.com/auth/cloud-platform',
-        'https://www.googleapis.com/auth/speech'
-      ]
-    });
+    /////★// Google Auth クライアントの初期化
+    /////★const auth = new GoogleAuth({
+      /////★credentials: serviceAccountInfo,
+      /////★projectId: projectId,
+      /////★scopes: [
+        /////★'https://www.googleapis.com/auth/cloud-platform',
+        /////★'https://www.googleapis.com/auth/speech'
+      /////★]
+    /////★});
 
-    // アクセストークンの取得
-    const authClient = await auth.getClient();
-    const accessToken = await authClient.getAccessToken();
+    /////★// アクセストークンの取得
+    /////★const authClient = await auth.getClient();
+    /////★const accessToken = await authClient.getAccessToken();
 
     // リクエストボディの検証
     const { audioData, config, clientId, processingMode } = req.body;
@@ -82,12 +150,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // 音声データのサイズ制限チェック（4MB）
+    // 音声データのサイズ制限チェック（120MB）
     const audioSizeInMB = (audioData.length * 3) / 4 / 1024 / 1024;
-    if (audioSizeInMB > 1000) {
+    if (audioSizeInMB > 120) {
       return res.status(413).json({
         error: 'Audio file too large for direct processing',
-        maxSize: '1000MB',
+        maxSize: '120MB',
         currentSize: `${audioSizeInMB.toFixed(2)}MB`,
         suggestion: 'Use large file processing mode'
       });
@@ -298,64 +366,64 @@ async function pollLongRunningOperation(operationName, accessToken, maxAttempts 
   throw new Error('Long running operation timeout (10 minutes)');
 }
 
-// チャンク処理
-async function processAudioChunk(requestBody, accessToken, res) {
-  try {
-    const { audioData, chunkIndex, startTime, config } = requestBody;
+/////★// チャンク処理
+/////★async function processAudioChunk(requestBody, accessToken, res) {
+  /////★try {
+    /////★const { audioData, chunkIndex, startTime, config } = requestBody;
     
-    const speechRequest = {
-      config: {
-        encoding: config.encoding || 'MP3',
-        sampleRateHertz: config.sampleRateHertz || 16000,
-        languageCode: config.languageCode || 'ja-JP',
-        model: 'latest_short', // チャンク処理では短時間モデルを使用
-        enableAutomaticPunctuation: true
-      },
-      audio: {
-        content: audioData
-      }
-    };
+    /////★const speechRequest = {
+      /////★config: {
+        /////★encoding: config.encoding || 'MP3',
+        /////★sampleRateHertz: config.sampleRateHertz || 16000,
+        /////★languageCode: config.languageCode || 'ja-JP',
+        /////★model: 'latest_short', // チャンク処理では短時間モデルを使用
+        /////★enableAutomaticPunctuation: true
+      /////★},
+      /////★audio: {
+        /////★content: audioData
+      /////★}
+    /////★};
 
-    const response = await fetch(
-      'https://speech.googleapis.com/v1/speech:recognize',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(speechRequest)
-      }
-    );
+    /////★const response = await fetch(
+      /////★'https://speech.googleapis.com/v1/speech:recognize',
+      /////★{
+        /////★method: 'POST',
+        /////★headers: {
+          /////★'Authorization': `Bearer ${accessToken}`,
+          /////★'Content-Type': 'application/json'
+        /////★},
+        /////★body: JSON.stringify(speechRequest)
+      /////★}
+    /////★);
 
-    const data = await response.json();
+    /////★const data = await response.json();
     
-    if (!response.ok) {
-      throw new Error(`Speech API Error: ${data.error?.message}`);
-    }
+    /////★if (!response.ok) {
+      /////★throw new Error(`Speech API Error: ${data.error?.message}`);
+    /////★}
 
-    const transcript = data.results && data.results.length > 0 
-      ? data.results.map(result => result.alternatives[0].transcript).join(' ')
-      : '';
+    /////★const transcript = data.results && data.results.length > 0 
+      /////★? data.results.map(result => result.alternatives[0].transcript).join(' ')
+      /////★: '';
 
-    res.status(200).json({
-      success: true,
-      transcript: transcript,
-      chunkIndex: chunkIndex,
-      startTime: startTime,
-      processingMode: 'chunk',
-      confidence: data.results && data.results[0] ? data.results[0].alternatives[0].confidence : 0
-    });
+    /////★res.status(200).json({
+      /////★success: true,
+      /////★transcript: transcript,
+      /////★chunkIndex: chunkIndex,
+      /////★startTime: startTime,
+      /////★processingMode: 'chunk',
+      /////★confidence: data.results && data.results[0] ? data.results[0].alternatives[0].confidence : 0
+    /////★});
 
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      chunkIndex: requestBody.chunkIndex,
-      processingMode: 'chunk'
-    });
-  }
-}
+  /////★} catch (error) {
+    /////★res.status(500).json({
+      /////★success: false,
+      /////★error: error.message,
+      /////★chunkIndex: requestBody.chunkIndex,
+      /////★processingMode: 'chunk'
+    /////★});
+  /////★}
+/////★}
 
 // 入力バリデーション関数
 function validateInput({ audioData, config }) {
