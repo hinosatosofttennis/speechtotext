@@ -1,0 +1,44 @@
+{
+  "functions": {
+    "api/speech-to-text.js": {
+      "maxDuration": 60
+    },
+    "api/gemini.js": {
+      "maxDuration": 30
+    },
+    "api/get-signed-url.js": {
+      "maxDuration": 30
+    },
+    "api/process-large-audio.js": {
+      "maxDuration": 300
+    },
+    "api/process-drive-audio.js": {
+      "maxDuration": 600
+    },
+    "api/process-audio-chunk.js": {
+      "maxDuration": 60
+    },
+    "api/cleanup-files.js": {
+      "maxDuration": 60
+    },
+    "api/get-google-token.js": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
+      ]
+    }
+  ],
+  "env": {
+    "GOOGLE_PROJECT_ID": "@google-project-id",
+    "GOOGLE_SERVICE_ACCOUNT_KEY": "@google-service-account-key",
+    "GOOGLE_REGION": "@google-region",
+    "GOOGLE_STORAGE_BUCKET": "@google-storage-bucket"
+  }
+}
