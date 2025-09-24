@@ -35,7 +35,7 @@
     }
   ],
   "env": {
-    "GOOGLE_PROJECT_ID": "@google-project-id",
+    "GOOGLE_PROJECT_ID": "@google_project_id",
     "GOOGLE_SERVICE_ACCOUNT_KEY": "@google-service-account-key",
     "GOOGLE_REGION": "@google-region",
     "GOOGLE_STORAGE_BUCKET": "@google-storage-bucket"
