@@ -39,10 +39,12 @@ export default async function handler(req, res) {
     // 環境変数の確認
     const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
     const projectId = process.env.GOOGLE_PROJECT_ID;
-    
+      } catch (error) {
+    console.error('Server Error:', error);}  
+       
     if (!serviceAccountKey || !projectId) {
       throw new Error('Google Cloud設定が不正です');
-    }
+    }    
 
       try {
     // Secret Managerからgemini APIキーを取得
@@ -110,11 +112,7 @@ export default async function handler(req, res) {
       error: 'Gemini API Error',
       message: error.message
     });
-  } finally {
-  // エラーの有無にかかわらず、最後に必ず実行されるコード
-  console.log("処理が終了しました。");
-        }
-    }
+  }
   // サービスアカウント認証情報をデコード
     const serviceAccountInfo = JSON.parse(
       Buffer.from(serviceAccountKey, 'base64').toString('utf-8')
