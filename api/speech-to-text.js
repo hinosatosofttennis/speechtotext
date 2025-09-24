@@ -43,7 +43,8 @@ export default async function handler(req, res) {
       throw new Error('Google Cloud設定が不正です');
     }    
 
-    try {
+  try
+  {
     // Secret Managerからgemini APIキーを取得
     const auth = new GoogleAuth({
       credentials: JSON.parse(
@@ -110,7 +111,7 @@ export default async function handler(req, res) {
       message: error.message
     });
   }
-  }
+  
   // サービスアカウント認証情報をデコード
     const serviceAccountInfo = JSON.parse(
       Buffer.from(serviceAccountKey, 'base64').toString('utf-8')
