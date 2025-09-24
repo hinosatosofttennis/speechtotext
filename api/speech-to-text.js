@@ -35,12 +35,9 @@ export default async function handler(req, res) {
     });
   }
 
-  try {
-    // 環境変数の確認
+   // 環境変数の確認
     const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
     const projectId = process.env.GOOGLE_PROJECT_ID;
-      } catch (error) {
-    console.error('Server Error:', error);}  
        
     if (!serviceAccountKey || !projectId) {
       throw new Error('Google Cloud設定が不正です');
