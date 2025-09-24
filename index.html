@@ -622,7 +622,7 @@
         // 大容量音声ファイル処理クラス
         class LargeAudioProcessor {
             constructor() {
-                this.maxChunkSize = 10 * 1024 * 1024; // 10MB chunks
+                this.maxChunkSize = 120 * 1024 * 1024; // 120MB chunks
                 this.supportedFormats = ['mp3', 'wav', 'flac', 'm4a', 'aac'];
                 this.progressBars = new Map(); // 進行状況管理
             }
@@ -646,7 +646,7 @@
                         return await this.processViaGoogleDrive(file);
                     } else {
                         // 1GB超: ストリーミング処理
-                        return await this.processViaStreaming(file);
+                        /////★return await this.processViaStreaming(file);
                     }
                 } catch (error) {
                     console.error('大容量ファイル処理エラー:', error);
@@ -804,38 +804,38 @@
             }
 
             // ストリーミング処理（超大容量対応）
-            async processViaStreaming(file) {
-                const chunks = this.createFileChunks(file, this.maxChunkSize);
-                const results = [];
-                const language = document.getElementById('language').value;
+            /////★async processViaStreaming(file) {
+                /////★const chunks = this.createFileChunks(file, this.maxChunkSize);
+                /////★const results = [];
+                /////★const language = document.getElementById('language').value;
                 
-                updateLoadingMessage(`ファイルを${chunks.length}個のチャンクに分割しました`);
+                /////★updateLoadingMessage(`ファイルを${chunks.length}個のチャンクに分割しました`);
                 
-                for (let i = 0; i < chunks.length; i++) {
-                    const chunk = chunks[i];
-                    const progressBar = this.createProgressBar(`チャンク ${i + 1}/${chunks.length} 処理中...`);
+                /////★for (let i = 0; i < chunks.length; i++) {
+                    /////★const chunk = chunks[i];
+                    /////★const progressBar = this.createProgressBar(`チャンク ${i + 1}/${chunks.length} 処理中...`);
                     
-                    try {
+                    /////★try {
                         // チャンクごとに処理
-                        const chunkResult = await this.processChunk(chunk, i, language);
-                        results.push(chunkResult);
+                        /////★const chunkResult = await this.processChunk(chunk, i, language);
+                        /////★results.push(chunkResult);
                         
-                        this.removeProgressBar(progressBar);
+                        /////★this.removeProgressBar(progressBar);
                         
                         // 処理間隔を設ける（レート制限対策）
-                        if (i < chunks.length - 1) {
-                            await this.sleep(2000);
-                        }
+                        /////★if (i < chunks.length - 1) {
+                            /////★await this.sleep(2000);
+                        /////★}
                         
-                    } catch (error) {
-                        this.removeProgressBar(progressBar);
-                        console.error(`チャンク ${i + 1} の処理でエラー:`, error);
+                    /////★} catch (error) {
+                        /////★this.removeProgressBar(progressBar);
+                        /////★console.error(`チャンク ${i + 1} の処理でエラー:`, error);
                         // エラーがあっても続行するか判定
-                        if (!this.shouldContinueOnError(error)) {
-                            throw error;
-                        }
-                    }
-                }
+                        /////★if (!this.shouldContinueOnError(error)) {
+                            /////★throw error;
+                        /////★}
+                    /////★}
+                /////★}
                 
                 // 結果をマージ
                 return this.mergeChunkResults(results);
@@ -901,66 +901,66 @@
                 return result.id;
             }
 
-            // ファイルをチャンクに分割
-            createFileChunks(file, chunkSize) {
-                const chunks = [];
-                let start = 0;
+            /////★// ファイルをチャンクに分割
+            /////★createFileChunks(file, chunkSize) {
+                /////★const chunks = [];
+                /////★let start = 0;
                 
-                while (start < file.size) {
-                    const end = Math.min(start + chunkSize, file.size);
-                    chunks.push({
-                        data: file.slice(start, end),
-                        start: start,
-                        end: end,
-                        index: chunks.length
-                    });
-                    start = end;
-                }
+                /////★while (start < file.size) {
+                    /////★const end = Math.min(start + chunkSize, file.size);
+                    /////★chunks.push({
+                        /////★data: file.slice(start, end),
+                        /////★start: start,
+                        /////★end: end,
+                        /////★index: chunks.length
+                    /////★});
+                    /////★start = end;
+                /////★}
                 
-                return chunks;
-            }
+                /////★return chunks;
+            /////★}
 
-            // チャンク処理
-            async processChunk(chunk, index, language) {
-                const base64Data = await this.fileToBase64(chunk.data);
+            /////★// チャンク処理
+            /////★async processChunk(chunk, index, language) {
+                /////★const base64Data = await this.fileToBase64(chunk.data);
                 
-                const response = await fetch(SPEECH_API_PROXY, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        audioData: base64Data,
-                        chunkIndex: index,
-                        startTime: this.calculateStartTime(chunk.start),
-                        processingMode: 'chunk_processing',
-                        config: {
-                            encoding: window.currentAudioEncoding || 'MP3',
-                            sampleRateHertz: 16000,
-                            languageCode: language
-                        },
-                        clientId: CLIENT_ID
-                    })
-                });
+                /////★const response = await fetch(SPEECH_API_PROXY, {
+                    /////★method: 'POST',
+                    /////★headers: { 'Content-Type': 'application/json' },
+                    /////★body: JSON.stringify({
+                        /////★audioData: base64Data,
+                        /////★chunkIndex: index,
+                        /////★startTime: this.calculateStartTime(chunk.start),
+                        /////★processingMode: 'chunk_processing',
+                        /////★config: {
+                            /////★encoding: window.currentAudioEncoding || 'MP3',
+                            /////★sampleRateHertz: 16000,
+                            /////★languageCode: language
+                        /////★},
+                        /////★clientId: CLIENT_ID
+                    /////★})
+                /////★});
                 
-                return await response.json();
-            }
+                /////★return await response.json();
+            /////★}
 
-            // チャンク結果をマージ
-            mergeChunkResults(results) {
-                const mergedText = results
-                    .filter(result => result.success && result.transcript)
-                    .sort((a, b) => a.chunkIndex - b.chunkIndex)
-                    .map(result => result.transcript)
-                    .join(' ');
+            /////★// チャンク結果をマージ
+            /////★mergeChunkResults(results) {
+                /////★const mergedText = results
+                    /////★.filter(result => result.success && result.transcript)
+                    /////★.sort((a, b) => a.chunkIndex - b.chunkIndex)
+                    /////★.map(result => result.transcript)
+                    /////★.join(' ');
                 
-                return {
-                    success: true,
-                    text: mergedText,
-                    speakers: null, // ストリーミング処理では話者識別は無効
-                    processingMode: 'streaming',
-                    totalChunks: results.length,
-                    processedChunks: results.filter(r => r.success).length
-                };
-            }
+                /////★return {
+                    /////★success: true,
+                    /////★text: mergedText,
+                    /////★speakers: null, // ストリーミング処理では話者識別は無効
+                    /////★processingMode: 'streaming',
+                    /////★totalChunks: results.length,
+                    /////★processedChunks: results.filter(r => r.success).length
+                /////★};
+            /////★}
 
             // プログレスバー作成
             createProgressBar(message) {
