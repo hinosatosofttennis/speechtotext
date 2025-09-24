@@ -110,8 +110,11 @@ export default async function handler(req, res) {
       error: 'Gemini API Error',
       message: error.message
     });
-  }
-}
+  } finally {
+  // エラーの有無にかかわらず、最後に必ず実行されるコード
+  console.log("処理が終了しました。");
+        }
+    }
   // サービスアカウント認証情報をデコード
     const serviceAccountInfo = JSON.parse(
       Buffer.from(serviceAccountKey, 'base64').toString('utf-8')
