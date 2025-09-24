@@ -2,7 +2,7 @@
   "name": "speech-to-text-proxy",
   "version": "1.1.0",
   "description": "Speech-to-Text API Proxy",
-  "type": "module",  // この行を追加
+  "type": "module",
   "main": "vercel.js",
   "scripts": {
     "dev": "vercel dev",
