@@ -19,7 +19,7 @@
       "maxDuration": 10
     },
     "api/cleanup-files.js": {
-      "maxDuration": 10
+      "maxDuration": 15
     },
     "api/get-google-token.js": {
       "maxDuration": 10
