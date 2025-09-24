@@ -110,6 +110,7 @@ export default async function handler(req, res) {
       message: error.message
     });
   }
+  }
   // サービスアカウント認証情報をデコード
     const serviceAccountInfo = JSON.parse(
       Buffer.from(serviceAccountKey, 'base64').toString('utf-8')
