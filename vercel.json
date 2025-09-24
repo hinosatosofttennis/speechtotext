@@ -1,28 +1,28 @@
 {
   "functions": {
     "api/speech-to-text.js": {
-      "maxDuration": 15
+      "maxDuration": 10
     },
     "api/gemini.js": {
-      "maxDuration": 15
+      "maxDuration": 10
     },
     "api/get-signed-url.js": {
-      "maxDuration": 15
+      "maxDuration": 10
     },
     "api/process-large-audio.js": {
-      "maxDuration": 15
+      "maxDuration": 10
     },
     "api/process-drive-audio.js": {
-      "maxDuration": 15
+      "maxDuration": 10
     },
     "api/process-audio-chunk.js": {
-      "maxDuration": 15
+      "maxDuration": 10
     },
     "api/cleanup-files.js": {
-      "maxDuration": 15
+      "maxDuration": 10
     },
     "api/get-google-token.js": {
-      "maxDuration": 15
+      "maxDuration": 10
     }
   },
   "headers": [
