@@ -644,10 +644,10 @@
                     } else if (fileSizeInMB <= 1024) {
                         // 1GB以下: Google Drive経由
                         return await this.processViaGoogleDrive(file);
-                    } else {
+                    } /////★else {
                         // 1GB超: ストリーミング処理
                         /////★return await this.processViaStreaming(file);
-                    }
+                    /////★}
                 } catch (error) {
                     console.error('大容量ファイル処理エラー:', error);
                     throw error;
